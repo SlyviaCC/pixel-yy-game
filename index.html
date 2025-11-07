@@ -39,8 +39,20 @@
       .pixel-btn {
         @apply bg-primary text-white py-2 px-4 rounded-sm transform transition hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50;
       }
-      .control-btn {
-        @apply fixed w-16 h-16 md:w-20 md:h-20 rounded-full bg-dark/30 backdrop-blur-sm flex items-center justify-center text-white text-2xl md:text-3xl touch-manipulation active:bg-dark/50 transition-all duration-100;
+      /* 优化的移动控制按钮样式 */
+      .control-pad {
+        @apply fixed bottom-6 left-4 w-28 h-28 md:hidden z-50;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      }
+      .direction-btn {
+        @apply absolute w-11 h-11 flex items-center justify-center text-white/20 text-2xl touch-manipulation transition-all duration-100 active:text-white/40 active:scale-90;
+      }
+      .shoot-btn {
+        @apply fixed bottom-12 right-4 w-14 h-14 md:hidden flex items-center justify-center text-white/20 text-2xl touch-manipulation transition-all duration-100 active:text-white/40 active:scale-90 z-50;
+      }
+      .pause-btn-mobile {
+        @apply fixed top-12 right-4 w-10 h-10 md:hidden bg-dark/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-base shadow-lg border border-white/20 touch-manipulation transition-all duration-100 active:bg-dark/70 z-50;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
       }
     }
   </style>
@@ -49,41 +61,39 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 
-<body class="bg-gray-900 overflow-hidden h-screen flex flex-col items-center justify-center p-2 m-0">
+<body class="bg-gray-900 overflow-hidden h-screen flex flex-col items-center justify-center p-0 m-0">
   <!-- 游戏容器 -->
-  <div id="game-container" class="relative w-full max-w-3xl aspect-[3/4] bg-dark rounded-sm overflow-hidden">
+  <div id="game-container" class="relative w-full h-full md:max-w-3xl md:aspect-[3/4] md:h-auto bg-dark rounded-sm overflow-hidden">
     <!-- 游戏画布 -->
     <canvas id="gameCanvas" class="w-full h-full"></canvas>
     
-    <!-- 移动端控制器 -->
-    <div id="mobile-controls" class="fixed inset-0 pointer-events-none md:hidden">
-      <!-- 方向控制 -->
-      <div class="absolute bottom-20 left-4 pointer-events-auto">
-        <div id="up" class="control-btn -mb-1">
-          <i class="fa fa-chevron-up"></i>
-        </div>
-        <div class="flex">
-          <div id="left" class="control-btn -ml-1">
-            <i class="fa fa-chevron-left"></i>
-          </div>
-          <div id="right" class="control-btn -mr-1">
-            <i class="fa fa-chevron-right"></i>
-          </div>
-        </div>
-        <div id="down" class="control-btn -mt-1">
-          <i class="fa fa-chevron-down"></i>
-        </div>
+    <!-- 优化的移动端控制器 -->
+    <!-- 方向控制盘 -->
+    <div class="control-pad">
+      <!-- 中心背景 -->
+      <!-- <div class="absolute inset-0 rounded-full bg-dark/20 border border-white/10"></div> -->
+      <div id="up" class="direction-btn top-0 left-1/2 transform -translate-x-1/2">
+        <i class="fa fa-chevron-up"></i>
       </div>
-      
-      <!-- 射击按钮 -->
-      <div id="shoot" class="control-btn absolute bottom-20 right-4 pointer-events-auto">
-        <i class="fa fa-crosshairs"></i>
+      <div id="down" class="direction-btn bottom-0 left-1/2 transform -translate-x-1/2">
+        <i class="fa fa-chevron-down"></i>
       </div>
-      
-      <!-- 暂停按钮 -->
-      <div id="pause-btn" class="control-btn w-12 h-12 top-4 right-4 pointer-events-auto">
-        <i class="fa fa-pause"></i>
+      <div id="left" class="direction-btn left-0 top-1/2 transform -translate-y-1/2">
+        <i class="fa fa-chevron-left"></i>
       </div>
+      <div id="right" class="direction-btn right-0 top-1/2 transform -translate-y-1/2">
+        <i class="fa fa-chevron-right"></i>
+      </div>
+    </div>
+    
+    <!-- 射击按钮 -->
+    <div id="shoot" class="shoot-btn">
+      <i class="fa fa-crosshairs"></i>
+    </div>
+    
+    <!-- 暂停按钮 -->
+    <div id="pause-btn" class="pause-btn-mobile">
+      <i class="fa fa-pause"></i>
     </div>
     
     <!-- 开始菜单 -->
@@ -98,8 +108,8 @@
       <h2 class="font-pixel text-[clamp(1.2rem,4vw,2rem)] text-white mb-6 text-center">游戏说明</h2>
       <div class="text-white max-w-md px-4 space-y-3 text-sm md:text-base">
         <p>• 控制你的飞机消灭来袭的敌机</p>
-        <p>•  desktop: 使用方向键移动，空格键射击</p>
-        <p>•  mobile: 使用虚拟按键控制移动和射击</p>
+        <p>• 电脑: 使用方向键移动，空格键射击</p>
+        <p>• 手机: 使用左侧方向键移动，右侧按钮射击</p>
         <p>• 击毁敌机获得分数，连续击毁可获得连击奖励</p>
         <p>• 吃到道具可以获得特殊能力</p>
       </div>
@@ -196,7 +206,7 @@
         // 加载DOM元素
         this.loadElements();
         
-        // 绑定事件监听
+        // 绑定事件监听（增强移动端触摸支持）
         this.bindEvents();
         
         // 初始化游戏画面
@@ -252,26 +262,38 @@
         this.highScoreDisplay = document.getElementById('high-score');
       }
       
-      // 绑定事件监听
+      // 绑定事件监听（增强移动端支持）
       bindEvents() {
         // 键盘控制
         window.addEventListener('keydown', (e) => this.handleKeyDown(e));
         window.addEventListener('keyup', (e) => this.handleKeyUp(e));
         
-        // 触摸控制 - 开始触摸
-        Object.keys(this.controlButtons).forEach(key => {
+        // 触摸控制 - 增强版
+        const touchButtons = ['up', 'down', 'left', 'right', 'shoot'];
+        
+        touchButtons.forEach(key => {
           const btn = this.controlButtons[key];
-          btn.addEventListener('touchstart', () => {
+          
+          // 触摸开始
+          btn.addEventListener('touchstart', (e) => {
             this.keys[key] = true;
+            // 防止触摸时页面滚动
             e.preventDefault();
           }, { passive: false });
           
-          btn.addEventListener('touchend', () => {
+          // 触摸结束
+          btn.addEventListener('touchend', (e) => {
             this.keys[key] = false;
             e.preventDefault();
           }, { passive: false });
           
-          // 鼠标点击控制
+          // 触摸离开按钮区域
+          btn.addEventListener('touchcancel', (e) => {
+            this.keys[key] = false;
+            e.preventDefault();
+          }, { passive: false });
+          
+          // 鼠标控制（调试用）
           btn.addEventListener('mousedown', () => {
             this.keys[key] = true;
           });
@@ -611,7 +633,7 @@
           }
         }
         
-        // 玩家移动
+        // 玩家移动（优化移动响应）
         if (this.keys.up && this.player.y > 0) {
           this.player.y -= this.player.speed;
         }
